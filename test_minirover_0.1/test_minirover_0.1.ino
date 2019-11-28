@@ -1,10 +1,9 @@
-#include "MotorControl.h"
+#include "../libs/MotorControl.h"
 
 char buffer[4]={0};
 char command,value; 
 
-void setup()
-{
+void setup() {
   pinMode(LED_BUILTIN,OUTPUT);
   Serial.begin(115200);
   all_motorInit();                  //Initialise motors pins
