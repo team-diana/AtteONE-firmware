@@ -7,6 +7,7 @@ motor_t right_Motor;
 void
 all_motorInit () {
 
+    ATTE_ID = 1;
 
     right_Motor.side         = DX;
 

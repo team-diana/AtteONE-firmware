@@ -12,7 +12,6 @@ typedef enum{ CW,
 
 typedef struct _motor_t {
 
-        int     n_Atte;
         int     motorPin;
         int     motorPin2;
         int     enablePin;
@@ -30,6 +29,7 @@ typedef struct _pwmProperties {
 
         }pwmProperties;
 
+const int ATTE_ID;
 
 /*
 // left Motors (0)

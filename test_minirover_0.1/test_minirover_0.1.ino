@@ -1,4 +1,4 @@
-#include "MotorControl.h"
+#include "mqtt.h"
 #define offset 48
 char buffer[4]={0};
 char command;
@@ -9,6 +9,7 @@ void setup() {
   Serial.begin(115200);
   all_motorInit();           //Initialise motors pin
   pwm_Init();
+  mqtt_wifi_init();
 }
 void loop() {
 
