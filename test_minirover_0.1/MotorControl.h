@@ -3,22 +3,31 @@
 
 #include <Arduino.h>
 
-typedef enum{SX,DX,NONE} side_t;
+typedef enum{ SX,
+              DX,
+              NONE} side_t;
 
-typedef enum{CW,CCW} rot_t;
+typedef enum{ CW,
+              CCW} rot_t;
 
 typedef struct _motor_t {
-        side_t  side;
+
+        int     n_Atte;
         int     motorPin;
         int     motorPin2;
         int     enablePin;
+
+        side_t  side;
+
         }motor_t;
 
 typedef struct _pwmProperties {
+
         int     freq;
         int     pwmChannel1;
         int     pwmChannel2;
         int     resolution;
+
         }pwmProperties;
 
 
