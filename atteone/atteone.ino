@@ -81,17 +81,26 @@ void reconnect() {
     }
 }
 
-void mqttMessageCallback(char* topic, byte* payload, unsigned int length) {
+void mqttMessageCallback(char* topic, byte* b_payload, unsigned int length) {
+    if (length > 50) return;
+    char c_payload[51];
+    for (int i=0; i<length; i++) {
+        c_payload[i] = (char) b_payload[i];
+    }
+    c_payload[length] = '\0';
 
     String s_topic = String(topic);
+    String s_payload = String(c_payload);
 
     #ifdef SERIAL_DEBUG
     Serial.print("Message arrived in topic: ");
     Serial.println(s_topic);
+    Serial.println(s_payload);
+    Serial.println(c_payload);
 
     Serial.print("Message:  ");
     for (int i = 0; i < length; i++) {
-        Serial.print((char)payload[i]);
+        Serial.print((char)b_payload[i]);
     }
     Serial.println();
     #endif
@@ -101,7 +110,8 @@ void mqttMessageCallback(char* topic, byte* payload, unsigned int length) {
         float left_speed = 0.0;
         float right_speed = 0;
         float norm_speed=0, direction=0;
-        sscanf((char*)payload, "%f %f", &norm_speed, &direction);
+
+        sscanf(c_payload, "%f %f", &norm_speed, &direction);
 
         if (norm_speed <= 0.01) {
             norm_speed = 0;
@@ -113,7 +123,7 @@ void mqttMessageCallback(char* topic, byte* payload, unsigned int length) {
     }
     else if (s_topic == TANK_TOPIC || s_topic == "atte0/tank") {
         float tank_left = 0, tank_right = 0;
-        sscanf((char*)payload, "%f %f", &tank_left, &tank_right);
+        sscanf(c_payload, "%f %f", &tank_left, &tank_right);
         // Serial.printf("Received L/R:\t %f %f\n", tank_left, tank_right);
         driveMotor(tank_left, tank_right);
     }
@@ -143,7 +153,7 @@ void loop() {
         led_status = !led_status;
         digitalWrite(LED, led_status);
     }
-    if ((alive_count % 100000) == 0) {
+    if ((alive_count % 30000) == 0) {
         mqtt_client.publish(ALIVE_TOPIC.c_str(), "alive");
     }
     alive_count++;

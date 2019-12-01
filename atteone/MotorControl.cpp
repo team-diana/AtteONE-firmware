@@ -42,6 +42,8 @@ void pwmInit() {
 
 void driveMotor(float speed_left, float speed_right) {
 
+    Serial.printf("drive L/R:\t%f %f\n", speed_left, speed_right);
+
     motorSetSpeed(SX, speed_left);
     motorSetSpeed(DX, speed_right);
 }
@@ -53,71 +55,58 @@ side_t motorSetSpeed(side_t side, float speed) {  //speed is duty cicle
     motorSetDir(side, (raw_speed > 0 ? CW : CCW));
 
     if (raw_speed < -1) raw_speed = -1;
-    else if (raw_speed >= -0.01 && raw_speed <= 0.01) raw_speed = 0;
+    else if (raw_speed >= -0.002 && raw_speed <= 0.002) raw_speed = 0;
     else if (raw_speed > 1) raw_speed = 1;
 
     if (raw_speed ==  0) motor_speed = 0;
-    else  motor_speed = (int) (raw_speed * 55.0) + 50.0;
+    else motor_speed = (int) (abs(raw_speed) * 50.0) + 50.0;
 
-    // Serial.printf("Speed/Motor Speed:\t%s %f %d\n", (side == SX ? "sx" : "dx"), raw_speed, motor_speed);
+    Serial.printf("Speed/Motor Speed:\t%s %f %d\n", (side == SX ? "sx" : "dx"), raw_speed, motor_speed);
 
-    if (raw_speed > 0) {
+    if (raw_speed == 0) {
+        if (side == SX) motorLeftSoftStop();
+        else if (side == DX) motorRightSoftStop();
+    } else {
         switch(side) {
             case SX:
-            // digitalWrite(left_Motor.motorPin, HIGH);
-            // digitalWrite(left_Motor.motorPin2, LOW);
             ledcWrite(left_Motor.side, abs(motor_speed));
             break;
             case DX:
-            // digitalWrite(right_Motor.motorPin, HIGH);
-            // digitalWrite(right_Motor.motorPin2, LOW);
             ledcWrite(right_Motor.side, abs(motor_speed));
             break;
-            default:
-            // Serial.println("invalid side value, 1 or 0");
-            break;
         }
-    } else if (raw_speed == 0) {
-        if (side == SX) motorLeftSoftStop();
-        else if (side == DX) motorRightSoftStop();
     }
 }
 
-
 side_t motorSetDir(side_t side, rot_t rotation) {
 
-    // Serial.printf("Side / Rotation:\t%s %s\n", (side == SX ? "sx" : "dx"), (rotation == CW ? "cw" : "ccw"));
+    if (rotation == CW) Serial.printf("Side / Rotation:\t%s %s\n", (side == SX ? "sx" : "dx"), "cw");
+    else if (rotation == CCW) Serial.printf("Side / Rotation:\t%s %s\n", (side == SX ? "sx" : "dx"), "ccw");
 
-    switch(side) {
-        case SX:
+    if(side == SX) {
         // left side
         if (rotation == CCW) {
             //backward rotation
             digitalWrite(left_Motor.motorPin, HIGH);
             digitalWrite(left_Motor.motorPin2, LOW);
-            return side;
         }
         else {
             //forward rotation
             digitalWrite(left_Motor.motorPin, LOW);
             digitalWrite(left_Motor.motorPin2, HIGH);
-            return side;
         }
-        case DX:
+    } else if (side == DX) {
         // right side
         if (rotation == CCW) {
             //backward rotation
             digitalWrite(right_Motor.motorPin, HIGH);
             digitalWrite(right_Motor.motorPin2, LOW);
-            return side;
-        }
-        else {
+        } else {
             //forward rotation
             digitalWrite(right_Motor.motorPin, LOW);
             digitalWrite(right_Motor.motorPin2, HIGH);
-            return side;
         }
-        default:
+    } else {
         Serial.println("invalid side value, 1 or 0");
         return NONE;
     }
