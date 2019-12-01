@@ -17,6 +17,7 @@ const int   MQTT_PORT      = 1883;
 String ROVER_ROOT_TOPIC = String("atte") + String(ATTE_ID);
 String MOVE_TOPIC = ROVER_ROOT_TOPIC + "/move";
 String TANK_TOPIC = ROVER_ROOT_TOPIC + "/tank";
+String ALIVE_TOPIC = ROVER_ROOT_TOPIC + "/alive";
 
 #define LED 5
 bool led_status;
@@ -143,7 +144,7 @@ void loop() {
         digitalWrite(LED, led_status);
     }
     if ((alive_count % 100000) == 0) {
-        mqtt_client.publish("atte1/status", "alive");
+        mqtt_client.publish(ALIVE_TOPIC.c_str(), "alive");
     }
     alive_count++;
 }
