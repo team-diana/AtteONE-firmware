@@ -18,9 +18,15 @@ String ROVER_ROOT_TOPIC = String("atte") + String(ATTE_ID);
 String MOVE_TOPIC = ROVER_ROOT_TOPIC + "/move";
 String TANK_TOPIC = ROVER_ROOT_TOPIC + "/tank";
 String ALIVE_TOPIC = ROVER_ROOT_TOPIC + "/alive";
+String ENABLE_TOPIC = ROVER_ROOT_TOPIC + "/enable";
+
+bool rover_enable = true;
+unsigned int reconnection_counter = 0;
 
 #define LED 5
 bool led_status;
+int led_ticks_normal = 3500;
+int led_ticks_rover_disabled = 17000;
 
 char buffer[4]={0};
 char command;
@@ -36,13 +42,23 @@ void setuWifi() {
     WiFi.begin(SSID, WIFI_PASSWORD);
     // mqtt_client.connect(MQTT_USER);
 
+    digitalWrite(LED, HIGH);
     Serial.println("Connecting to Wifi...");
     while(WiFi.status()!= WL_CONNECTED){
-        delay(500);
         Serial.print(".");
-
-        led_status = !led_status;
-        digitalWrite(LED, led_status);
+        // W of Wifi in morse
+        digitalWrite(LED, LOW);
+        delay(150);
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
+        delay(300);
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
+        delay(300);
+        digitalWrite(LED, HIGH);
+        delay(400);
     }
     Serial.println();
 
@@ -58,17 +74,23 @@ void reconnect() {
     while (!mqtt_client.connected()) {
         Serial.print("Attempting MQTT connection...");
 
+        digitalWrite(LED, HIGH);
         // Attempt to connect
         if (mqtt_client.connect(MQTT_USER)) {
             Serial.println("connected");
             //Once connected, publish an announcement...
-            mqtt_client.publish("atte1/status", "ready and operational!");
+            if (reconnection_counter == 0) {
+                mqtt_client.publish("atte1/status", "ready and operational");
+            } else mqtt_client.publish("atte1/status", String("reconnected for the " + String(reconnection_counter) + " time").c_str());
+            reconnection_counter++;
             // ... and resubscribe
+            mqtt_client.subscribe(ENABLE_TOPIC.c_str());
             mqtt_client.subscribe(MOVE_TOPIC.c_str());
             mqtt_client.subscribe(TANK_TOPIC.c_str());
             mqtt_client.subscribe("atte0/#");
-            Serial.println("Subscibed to MQTT topics:");
+            Serial.println("Subscribed to MQTT topics:");
             Serial.println("atte0/#");
+            Serial.println(ENABLE_TOPIC);
             Serial.println(MOVE_TOPIC);
             Serial.println(TANK_TOPIC);
         } else {
@@ -76,7 +98,25 @@ void reconnect() {
             Serial.print(mqtt_client.state());
             Serial.println(" try again in 3 seconds");
             // Wait 3 seconds before retrying
-            delay(3000);
+
+            // B of mqtt Broker in Morse
+            digitalWrite(LED, LOW);
+            delay(300);
+            digitalWrite(LED, HIGH);
+            delay(100);
+            digitalWrite(LED, LOW);
+            delay(150);
+            digitalWrite(LED, HIGH);
+            delay(100);
+            digitalWrite(LED, LOW);
+            delay(150);
+            digitalWrite(LED, HIGH);
+            delay(100);
+            digitalWrite(LED, LOW);
+            delay(150);
+            digitalWrite(LED, HIGH);
+            delay(100);
+            delay(1950);
         }
     }
 }
@@ -105,27 +145,31 @@ void mqttMessageCallback(char* topic, byte* b_payload, unsigned int length) {
     Serial.println();
     #endif
 
-    if (s_topic == MOVE_TOPIC || s_topic == "atte0/move" ) {
 
-        float left_speed = 0.0;
-        float right_speed = 0;
-        float norm_speed=0, direction=0;
+    if (s_topic == ENABLE_TOPIC || s_topic == "atte0/enable" ) {
+        int en = 1;
+        sscanf(c_payload, "%d", &en);
+        rover_enable = (en != 0 ? true : false);
+    } else if (s_topic == MOVE_TOPIC || s_topic == "atte0/move" ) {
+        if (rover_enable) {
+            float left_speed = 0, right_speed = 0;
+            float norm_speed = 0, direction = 0;
+            sscanf(c_payload, "%f %f", &norm_speed, &direction);
 
-        sscanf(c_payload, "%f %f", &norm_speed, &direction);
-
-        if (norm_speed <= 0.01) {
-            norm_speed = 0;
-            motorSoftStop();
-        } else {
-            slipSteeringSaturationProfile(norm_speed, direction, &left_speed, &right_speed);
-            driveMotor(left_speed, right_speed);
+            if (norm_speed <= 0.01) {
+                norm_speed = 0;
+                motorSoftStop();
+            } else {
+                slipSteeringSaturationProfile(norm_speed, direction, &left_speed, &right_speed);
+                driveMotor(left_speed, right_speed);
+            }
         }
-    }
-    else if (s_topic == TANK_TOPIC || s_topic == "atte0/tank") {
-        float tank_left = 0, tank_right = 0;
-        sscanf(c_payload, "%f %f", &tank_left, &tank_right);
-        // Serial.printf("Received L/R:\t %f %f\n", tank_left, tank_right);
-        driveMotor(tank_left, tank_right);
+    } else if (s_topic == TANK_TOPIC || s_topic == "atte0/tank") {
+        if (rover_enable) {
+            float tank_left = 0, tank_right = 0;
+            sscanf(c_payload, "%f %f", &tank_left, &tank_right);
+            driveMotor(tank_left, tank_right);
+        }
     }
 }
 
@@ -147,13 +191,14 @@ void loop() {
         reconnect();
     }
     mqtt_client.loop(); // Run main MQTT client event
+    if (!rover_enable) motorHardStop();
 
     // Send alive message on MQTT and blink LED
-    if ((alive_count % 11000) == 0) {
+    if ((alive_count % (rover_enable ? led_ticks_normal : led_ticks_rover_disabled)) == 0) {
         led_status = !led_status;
         digitalWrite(LED, led_status);
     }
-    if ((alive_count % 30000) == 0) {
+    if ((alive_count % 40000) == 0) {
         mqtt_client.publish(ALIVE_TOPIC.c_str(), "alive");
     }
     alive_count++;
