@@ -20,6 +20,10 @@ Download the IDE from the official site:
 Follow here the instruction to setup Arduino IDE:
 [arduino-esp32](https://github.com/espressif/arduino-esp32)
 
+### USB to UART Driver
+
+Download the drivers from the official site: [CP210x USB to UART Bridge VCP Drivers](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
+
 ### MQTT
 
 Read the official page of PubSubClient library for API documentation: [PubSubClient](https://pubsubclient.knolleary.net)
