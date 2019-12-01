@@ -152,23 +152,11 @@ float polarVectorToSlipSteering (float direction, bool flag_left) {
     double x = (double) ((2*M_PI)/360.0) * direction;
 
     // Geogebra -> f(x)=If(-π≤x< (-3)/(4)π,-cos(2x),(-3)/(4)π≤x<0,cos((2x)/(3)),0≤x<(π)/(4),cos(2x),(π)/(4)≤x≤π,cos((2)/(3) (x+(π)/(2))))
-    if (direction >= -180 && direction < -135 ) {
-
-        ans = (double) -1.0 * cos( 2.0*x );
-
-    } else if (direction >= -135 && direction < 0) {
-
-        ans = (double) cos( 0.666666*x );
-
-    } else if (direction >= 0 && direction < 45) {
-
-        ans = (double) cos(2.0 * x);
-
-    } else if (direction >= 45 && direction <= 180) {
-
-        ans = (double) cos( (0.666666) * (x + (M_PI/2)) );
-
-    } else ans = -0.0000001234;
+    if      (direction >= -180 && direction < -135) ans = (double) -1.0 * cos(2.0 * x);
+    else if (direction >= -135 && direction <    0) ans = (double) cos(0.666666 * x);
+    else if (direction >=    0 && direction <   45) ans = (double) cos(2.0 * x);
+    else if (direction >=   45 && direction <= 180) ans = (double) cos(0.666666 * (x + (M_PI/2)) );
+    else ans = -0.0000001234;
 
     return (float) ans;
 }
