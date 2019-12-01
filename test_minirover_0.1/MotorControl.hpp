@@ -1,5 +1,5 @@
-#ifndef MOTORCONTROL_H
-#define MOTORCONTROL_H
+#ifndef __MOTORCONTROL_HPP__
+#define __MOTORCONTROL_HPP__
 #include <Arduino.h>
 
 typedef enum{ SX,
@@ -28,9 +28,8 @@ typedef struct _pwmProperties {
 
         }pwmProperties;
 
-const int ATTE_ID = 1;
-
-/*
+// Motor Pinout
+/*************************
 // left Motors (0)
 const int motor1Pin1 = 27;
 const int motor1Pin2 = 26;
@@ -46,15 +45,18 @@ const int freq = 30000;
 const int pwmChannel1 = 0;
 const int pwmChannel2 = 1;
 const int resolution = 8;
-*/
-side_t motorSetSpeed(side_t side,int speed);
-void all_motorInit();
-side_t motorSetDir(side_t side, rot_t dir);
-void motorHardStop(void);
-void motorSoftStop(void);
-void pwm_Init(void);
-void drive_Motor(int segno1,int segno2,int val1,int val2);
-void slipSteeringSaturationProfile (float norm_speed, float direction, float* speed_left, float* speed_right);
-float polarVectorToSlipSteering (float direction, bool flag_left);
+**************************/
 
-#endif
+side_t motorSetSpeed(side_t side, float speed);
+void   motorInitAll();
+side_t motorSetDir(side_t side, rot_t dir);
+void   motorHardStop(void);
+void   motorSoftStop(void);
+void   motorLeftSoftStop(void);
+void   motorRightSoftStop(void);
+void   pwmInit(void);
+void   driveMotor(float speed_left, float speed_right);
+float  polarVectorToSlipSteering (float direction, bool flag_left);
+void   slipSteeringSaturationProfile (float norm_speed, float direction, float* speed_left, float* speed_right);
+
+#endif //__MOTORCONTROL_HPP__

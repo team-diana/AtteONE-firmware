@@ -1,14 +1,11 @@
-#include "MotorControl.h"
+#include "MotorControl.hpp"
 #include <Arduino.h>
 #include <math.h>
-
-#define M_PI 3.141592653589
 
 motor_t left_Motor;
 motor_t right_Motor;
 
-void
-all_motorInit () {
+void motorInitAll () {
 
     right_Motor.side         = DX;
 
@@ -31,8 +28,7 @@ all_motorInit () {
     pinMode(left_Motor.enablePin,OUTPUT);
 }
 
-void
-pwm_Init() {
+void pwmInit() {
     pwmProperties             tmp_Pwm;
     tmp_Pwm.freq            = 3*10e4;
     tmp_Pwm.pwmChannel1     = 0;
@@ -42,7 +38,6 @@ pwm_Init() {
     ledcSetup(tmp_Pwm.pwmChannel2, tmp_Pwm.freq, tmp_Pwm.resolution);
     ledcAttachPin(left_Motor.enablePin,tmp_Pwm.pwmChannel1);
     ledcAttachPin(right_Motor.enablePin,tmp_Pwm.pwmChannel2);
-
 }
 
 
@@ -134,8 +129,7 @@ side_t motorSetDir(side_t side, rot_t rotation) {
     }
 }
 
-void
-motorSoftStop(void) {
+void motorLeftSoftStop(void) {
 
     digitalWrite(left_Motor.motorPin, LOW);
     digitalWrite(left_Motor.motorPin2, LOW);
