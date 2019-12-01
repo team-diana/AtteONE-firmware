@@ -27,3 +27,12 @@ Download the drivers from the official site: [CP210x USB to UART Bridge VCP Driv
 ### MQTT
 
 Read the official page of PubSubClient library for API documentation: [PubSubClient](https://pubsubclient.knolleary.net)
+
+## LED indicator
+
+| LED Sequence  | Meaning  |
+|---|---|
+| Fast blink  | Rover operational   |  
+| Slow blink  | Rover remotely disabled  |  
+| _W_ (Morse) | Connecting to Wifi   | 
+| _B_ (Morse) | Connecting to MQTT Broker  |  
