@@ -156,25 +156,33 @@ motorHardStop(void) {
 
 
 float polarVectorToSlipSteering (float direction, bool flag_left) {
-    float ans=0;
-    double dir = (double) direction;
+    double ans=0;
+    if (flag_left) direction = -direction;  // For left side --> f(-x)
+    double x = (double) ((2*M_PI)/360.0) * direction;
 
-    // Profile -> f(x)=If(-π≤x< (-3)/(4)π,-cos(2x),(-3)/(4)π≤x<0,cos((2x)/(3)),0≤x<(π)/(4),cos(2x),(π)/(4)≤x≤π,cos((2)/(3) (x+(π)/(2))))
-    if (dir >= -M_PI && dir < (-3*M_PI/4)) {
-        ans = (float) -cos(2 * dir);
-    } else if (dir <= (-3*M_PI)/(4) && dir < 0) {
-        ans = (float) cos( (2 * dir)/3 );
-    } else if (dir <= 0 && dir < (M_PI)/(4)) {
-        ans = (float) cos(2 * dir);
-    } else if (dir <= (M_PI)/(4) && dir ≤ M_PI) {
-        ans = (float) cos( (2/3) * (dir + ((M_PI)/(2))) );
-    }
+    // Geogebra -> f(x)=If(-π≤x< (-3)/(4)π,-cos(2x),(-3)/(4)π≤x<0,cos((2x)/(3)),0≤x<(π)/(4),cos(2x),(π)/(4)≤x≤π,cos((2)/(3) (x+(π)/(2))))
+    if (direction >= -180 && direction < -135 ) {
 
-    if (flag_left) ans = -ans;
+        ans = (double) -1.0 * cos( 2.0*x );
 
-    return ans;
+    } else if (direction >= -135 && direction < 0) {
+
+        ans = (double) cos( 0.666666*x );
+
+    } else if (direction >= 0 && direction < 45) {
+
+        ans = (double) cos(2.0 * x);
+
+    } else if (direction >= 45 && direction <= 180) {
+
+        ans = (double) cos( (0.666666) * (x + (M_PI/2)) );
+
+    } else ans = -0.0000001234;
+
+    return (float) ans;
 }
+
 void slipSteeringSaturationProfile (float norm_speed, float direction, float* speed_left, float* speed_right) {
-    speed_left  = norm_speed * polarVectorToSlipSteering(direction, true);
-    speed_right = norm_speed * polarVectorToSlipSteering(direction, false);
+    *speed_left  = norm_speed * polarVectorToSlipSteering(direction, 1);
+    *speed_right = norm_speed * polarVectorToSlipSteering(direction, 0);
 }
