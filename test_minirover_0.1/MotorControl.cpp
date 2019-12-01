@@ -21,7 +21,7 @@ void motorInitAll () {
 
     left_Motor.motorPin     = 19;
     left_Motor.motorPin2    = 23;
-    left_Motor.enablePin    = 5;
+    left_Motor.enablePin    = 17;
 
     pinMode(left_Motor.motorPin,OUTPUT);
     pinMode(left_Motor.motorPin2,OUTPUT);
@@ -40,106 +40,114 @@ void pwmInit() {
     ledcAttachPin(right_Motor.enablePin,tmp_Pwm.pwmChannel2);
 }
 
+void driveMotor(float speed_left, float speed_right) {
 
-void drive_Motor(int segno1,int segno2,int val1,int val2) {
-  if (segno1==-1 && segno2 ==1) { //SX
-        motorSetSpeed(SX,abs(val1));
-        motorSetSpeed(DX,abs(val2));
-        motorSetDir(SX,CW);
-        motorSetDir(DX,CCW);
-  }
- else if (segno1==-1 && segno2 ==-1) { //IND
-        motorSetSpeed(SX,abs(val1));
-        motorSetSpeed(DX,abs(val2));
-        motorSetDir(SX,CCW);
-        motorSetDir(DX,CCW);
-  }
-  else if (segno1==1 && segno2 ==-1) { //DX
-        motorSetSpeed(SX,abs(val1));
-        motorSetSpeed(DX,abs(val2));
-        motorSetDir(SX,CCW);
-        motorSetDir(DX,CW);
-  }
-  else if (segno1==1 && segno2 ==1) { //AV
-        motorSetSpeed(SX,abs(val1));
-        motorSetSpeed(DX,abs(val2));
-        motorSetDir(SX,CW);
-        motorSetDir(DX,CW);
-  }
+    motorSetSpeed(SX, speed_left);
+    motorSetSpeed(DX, speed_right);
 }
 
-side_t motorSetSpeed(side_t side, int speed) {  //speed is duty cicle
+side_t motorSetSpeed(side_t side, float speed) {  //speed is duty cicle
+    float raw_speed = speed;
+    int motor_speed  = 0;
 
-    if (speed >=0) {
+    motorSetDir(side, (raw_speed > 0 ? CW : CCW));
+
+    if (raw_speed < -1) raw_speed = -1;
+    else if (raw_speed >= -0.01 && raw_speed <= 0.01) raw_speed = 0;
+    else if (raw_speed > 1) raw_speed = 1;
+
+    if (raw_speed ==  0) motor_speed = 0;
+    else  motor_speed = (int) (raw_speed * 55.0) + 50.0;
+
+    // Serial.printf("Speed/Motor Speed:\t%s %f %d\n", (side == SX ? "sx" : "dx"), raw_speed, motor_speed);
+
+    if (raw_speed > 0) {
         switch(side) {
             case SX:
-                digitalWrite(left_Motor.motorPin, HIGH);
-                digitalWrite(left_Motor.motorPin2, LOW);
-                ledcWrite(left_Motor.side, speed);
-                return SX;
+            // digitalWrite(left_Motor.motorPin, HIGH);
+            // digitalWrite(left_Motor.motorPin2, LOW);
+            ledcWrite(left_Motor.side, abs(motor_speed));
+            break;
             case DX:
-                digitalWrite(right_Motor.motorPin, HIGH);
-                digitalWrite(right_Motor.motorPin2, LOW);
-                ledcWrite(right_Motor.side, speed);
-                return DX;
+            // digitalWrite(right_Motor.motorPin, HIGH);
+            // digitalWrite(right_Motor.motorPin2, LOW);
+            ledcWrite(right_Motor.side, abs(motor_speed));
+            break;
             default:
-                Serial.println("invalid side value, 1 or 0");
-                return NONE;
+            // Serial.println("invalid side value, 1 or 0");
+            break;
         }
+    } else if (raw_speed == 0) {
+        if (side == SX) motorLeftSoftStop();
+        else if (side == DX) motorRightSoftStop();
     }
 }
 
 
-
 side_t motorSetDir(side_t side, rot_t rotation) {
-    //dir=0 forward, dir=1 backward
+
+    // Serial.printf("Side / Rotation:\t%s %s\n", (side == SX ? "sx" : "dx"), (rotation == CW ? "cw" : "ccw"));
 
     switch(side) {
         case SX:
-            // left side
-            if (rotation == CCW) {
-                //backward rotation
-                digitalWrite(left_Motor.motorPin, HIGH);
-                digitalWrite(left_Motor.motorPin2, LOW);
-                return side;
-            }
-            else {
-                //forward rotation
-                digitalWrite(left_Motor.motorPin, LOW);
-                digitalWrite(left_Motor.motorPin2, HIGH);
-                return side;
-            }
+        // left side
+        if (rotation == CCW) {
+            //backward rotation
+            digitalWrite(left_Motor.motorPin, HIGH);
+            digitalWrite(left_Motor.motorPin2, LOW);
+            return side;
+        }
+        else {
+            //forward rotation
+            digitalWrite(left_Motor.motorPin, LOW);
+            digitalWrite(left_Motor.motorPin2, HIGH);
+            return side;
+        }
         case DX:
-            // right side
-            if (rotation == CCW) {
-                //backward rotation
-                digitalWrite(right_Motor.motorPin, HIGH);
-                digitalWrite(right_Motor.motorPin2, LOW);
-                return side;
-            }
-            else {
-                //forward rotation
-                digitalWrite(right_Motor.motorPin, LOW);
-                digitalWrite(right_Motor.motorPin2, HIGH);
-                return side;
-            }
+        // right side
+        if (rotation == CCW) {
+            //backward rotation
+            digitalWrite(right_Motor.motorPin, HIGH);
+            digitalWrite(right_Motor.motorPin2, LOW);
+            return side;
+        }
+        else {
+            //forward rotation
+            digitalWrite(right_Motor.motorPin, LOW);
+            digitalWrite(right_Motor.motorPin2, HIGH);
+            return side;
+        }
         default:
-            Serial.println("invalid side value, 1 or 0");
-            return NONE;
+        Serial.println("invalid side value, 1 or 0");
+        return NONE;
     }
 }
 
 void motorLeftSoftStop(void) {
 
+    ledcWrite(left_Motor.side, 0);
     digitalWrite(left_Motor.motorPin, LOW);
     digitalWrite(left_Motor.motorPin2, LOW);
+
+}
+
+void motorRightSoftStop(void) {
+    ledcWrite(right_Motor.side, 0);
 
     digitalWrite(right_Motor.motorPin, LOW);
     digitalWrite(right_Motor.motorPin2, LOW);
 }
 
-void
-motorHardStop(void) {
+void motorSoftStop(void) {
+
+    motorLeftSoftStop();
+    motorRightSoftStop();
+}
+
+void motorHardStop(void) {
+
+    ledcWrite(left_Motor.side, 0);
+    ledcWrite(right_Motor.side, 0);
 
     digitalWrite(left_Motor.motorPin, HIGH);
     digitalWrite(left_Motor.motorPin2, HIGH);
