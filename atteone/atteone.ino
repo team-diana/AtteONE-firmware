@@ -1,6 +1,7 @@
 #include "WiFi.h"
 #include <PubSubClient.h>
 #include "MotorControl.hpp"
+#include "ProximitySensor.hpp"
 
 //#define SERIAL_DEBUG
 
@@ -31,6 +32,10 @@ int led_ticks_rover_disabled = 17000;
 char buffer[4]={0};
 char command;
 char value;
+
+/* Sensor's declarations */
+long duration; //add
+float distance; //add
 
 WiFiClient esp_client;
 PubSubClient mqtt_client(esp_client);
@@ -121,12 +126,15 @@ void reconnect() {
     }
 }
 
-void mqttMessageCallback(char* topic, byte* b_payload, unsigned int length) {
+void mqttMessageCallback(char* topic, byte* b_payload, unsigned int length) 
+{
     if (length > 50) return;
     char c_payload[51];
-    for (int i=0; i<length; i++) {
-        c_payload[i] = (char) b_payload[i];
+    for (int i=0; i<length; i++)
+    {
+    c_payload[i] = (char) b_payload[i];
     }
+    
     c_payload[length] = '\0';
 
     String s_topic = String(topic);
@@ -139,44 +147,62 @@ void mqttMessageCallback(char* topic, byte* b_payload, unsigned int length) {
     Serial.println(c_payload);
 
     Serial.print("Message:  ");
-    for (int i = 0; i < length; i++) {
-        Serial.print((char)b_payload[i]);
+    for (int i = 0; i < length; i++) 
+    {
+    Serial.print((char)b_payload[i]);
     }
     Serial.println();
     #endif
 
 
-    if (s_topic == ENABLE_TOPIC || s_topic == "atte0/enable" ) {
+    if (s_topic == ENABLE_TOPIC || s_topic == "atte0/enable" ) 
+    {
         int en = 1;
         sscanf(c_payload, "%d", &en);
         rover_enable = (en != 0 ? true : false);
-    } else if (s_topic == MOVE_TOPIC || s_topic == "atte0/move" ) {
-        if (rover_enable) {
-            float left_speed = 0, right_speed = 0;
-            float norm_speed = 0, direction = 0;
-            sscanf(c_payload, "%f %f", &norm_speed, &direction);
-
-            if (norm_speed <= 0.01) {
-                norm_speed = 0;
-                motorSoftStop();
-            } else {
-                slipSteeringSaturationProfile(norm_speed, direction, &left_speed, &right_speed);
-                driveMotor(left_speed, right_speed);
-            }
-        }
-    } else if (s_topic == TANK_TOPIC || s_topic == "atte0/tank") {
-        if (rover_enable) {
-            float tank_left = 0, tank_right = 0;
-            sscanf(c_payload, "%f %f", &tank_left, &tank_right);
-            driveMotor(tank_left, tank_right);
-        }
     }
+    
+         
+      else if (s_topic == MOVE_TOPIC || s_topic == "atte0/move" ) 
+      {
+        if (rover_enable) 
+        {
+         float left_speed = 0, right_speed = 0;
+         float norm_speed = 0, direction = 0;
+         sscanf(c_payload, "%f %f", &norm_speed, &direction);
+        
+        distance=sensor(); //add
+        Serial.print("Distance: "); //add
+        Serial.println(distance); //add
+
+         if (norm_speed <= 0.01 || distance < 10) //add
+            {
+             norm_speed = 0;
+             motorSoftStop();
+            } 
+            else 
+              {
+               slipSteeringSaturationProfile(norm_speed, direction, &left_speed, &right_speed);
+               driveMotor(left_speed, right_speed);
+              }
+        }
+      }
+      else if (s_topic == TANK_TOPIC || s_topic == "atte0/tank") 
+        {
+        if (rover_enable)
+          {
+           float tank_left = 0, tank_right = 0;
+           sscanf(c_payload, "%f %f", &tank_left, &tank_right);
+           driveMotor(tank_left, tank_right);
+          }
+        }
 }
 
 void setup() {
     Serial.begin(115200);
     pinMode(LED, OUTPUT);
     motorInitAll();
+    setupsensor(); //add
     pwmInit();
     setuWifi();
 }
